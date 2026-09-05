@@ -1,0 +1,195 @@
+// adblock.rak
+// A simple domain-based ad blocker written in Rak.
+// It loads a hosts-style blocklist, scans a page for ad-serving
+// script, image, and link resources, then writes a report plus a
+// Pi-hole-style hosts snippet of every domain that was hit.
+
+fn load_domains(path) {
+    let mut domains = []
+    if file_exists(path) {
+        let content = file_read(path)
+        let lines = split(content, "\n")
+        let mut i = 0
+        while i < len(lines) {
+            let line = trim(lines[i])
+            if len(line) > 0 && substr(line, 0, 1) != "#" {
+                let fields = split(line, " ")
+                let mut host = fields[0]
+                let local = substr(host, 0, 1) == "0" || contains(host, "127.0.0.1")
+                if local && len(fields) > 1 {
+                    host = fields[1]
+                }
+                if len(host) > 0 && contains(host, ".")
+                {
+                    domains = push(domains, lower(host))
+                }
+            }
+            i = i + 1
+        }
+    }
+    return domains
+}
+
+fn match_domain(url, domains) {
+    let u = lower(url)
+    let mut i = 0
+    while i < len(domains) {
+        let d = domains[i]
+        if contains(u, d) {
+            return d
+        }
+        i = i + 1
+    }
+    return ""
+}
+
+fn blocked_matches(urls, tag, domains) {
+    let mut hits = []
+    let mut i = 0
+    while i < len(urls) {
+        let u = urls[i]
+        let d = match_domain(u, domains)
+        if len(d) > 0 {
+            let entry = { tag: tag, url: u, domain: d }
+            hits = push(hits, entry)
+        }
+        i = i + 1
+    }
+    return hits
+}
+
+fn merge(a, b) {
+    let mut out = a
+    let mut i = 0
+    while i < len(b) {
+        out = push(out, b[i])
+        i = i + 1
+    }
+    return out
+}
+
+fn extract_attr(html, attr) {
+    let parts = split(html, attr)
+    let mut out = []
+    let mut i = 0
+    while i < len(parts) {
+        if i > 0 {
+            let rest = parts[i]
+            let parts2 = split(rest, "\"")
+            if len(parts2) > 1 {
+                let chunk = parts2[1]
+                if len(chunk) > 0 {
+                    out = push(out, chunk)
+                }
+            }
+        }
+        i = i + 1
+    }
+    return out
+}
+
+fn scan_page(html, domains) {
+    let mut hits = []
+    let scripts = html_scripts(html)
+    let images = html_images(html)
+    let links = html_links(html)
+
+    hits = merge(hits, blocked_matches(scripts, "script", domains))
+    hits = merge(hits, blocked_matches(images, "image", domains))
+    hits = merge(hits, blocked_matches(links, "link", domains))
+
+    // Raw src= scan catches iframes and anything else the tag parser missed.
+    let raw = extract_attr(html, "src=")
+    hits = merge(hits, blocked_matches(raw, "src", domains))
+
+    return hits
+}
+
+fn write_report(path, hits, domains, page) {
+    let mut lines = []
+    lines = push(lines, "Rak adblocker report")
+    lines = push(lines, fmt("Page: {}", page))
+    lines = push(lines, fmt("Blocklist domains: {}", len(domains)))
+    lines = push(lines, fmt("Blocked resources: {}", len(hits)))
+    lines = push(lines, "")
+
+    let mut i = 0
+    while i < len(hits) {
+        let e = hits[i]
+        lines = push(lines, fmt("[{}] {} -> {}", get(e, "tag"), get(e, "url"), get(e, "domain")))
+        i = i + 1
+    }
+
+    file_write(path, join("\n", lines))
+    dump fmt("Report written to {}", path)
+}
+
+fn write_hosts(path, hits) {
+    let mut seen = []
+    let mut lines = []
+    lines = push(lines, "# Rak adblocker hosts entries (auto-generated)")
+    let mut i = 0
+    while i < len(hits) {
+        let d = get(hits[i], "domain")
+        let mut dup = false
+        let mut j = 0
+        while j < len(seen) {
+            if seen[j] == d {
+                dup = true
+            }
+            j = j + 1
+        }
+        if !dup {
+            seen = push(seen, d)
+            lines = push(lines, fmt("0.0.0.0 {}", d))
+        }
+        i = i + 1
+    }
+    file_write(path, join("\n", lines))
+    dump fmt("Hosts written to {}", path)
+}
+
+let list_path = env_get("RAK_ADBLOCK_LIST")
+if list_path == nil {
+    list_path = "adblocker/blocklist.txt"
+}
+
+let page = env_get("RAK_ADBLOCK_PAGE")
+if page == nil {
+    page = "adblocker/sample.html"
+}
+
+dump "=== Rak adblocker ==="
+let domains = load_domains(list_path)
+dump fmt("Blocklist: {} ({})", list_path, len(domains))
+
+let mut all = []
+
+if substr(page, 0, 4) == "http" {
+    dump fmt("Fetching page: {}", page)
+    fetch (page) {
+        method: "GET"
+    } {
+        let content = body
+        all = scan_page(content, domains)
+    }
+} else {
+    if file_exists(page) {
+        dump fmt("Reading page: {}", page)
+        let html = file_read(page)
+        all = scan_page(html, domains)
+    } else {
+        dump fmt("Page not found: {}", page)
+    }
+}
+
+dump fmt("Blocked resources: {}", len(all))
+let mut idx = 0
+while idx < len(all) {
+    let e = all[idx]
+    dump fmt("  [{}] {} -> {}", get(e, "tag"), get(e, "url"), get(e, "domain"))
+    idx = idx + 1
+}
+
+write_report("adblocker/report.txt", all, domains, page)
+write_hosts("adblocker/hosts.blocked", all)

@@ -1,0 +1,19 @@
+# Rak adblock demo blocklist
+# Hosts-style list, one domain per line. Lines starting with # are ignored.
+# The sample page in this folder references these domains.
+
+0.0.0.0 doubleclick.net
+0.0.0.0 googleadservices.com
+0.0.0.0 googlesyndication.com
+0.0.0.0 googletagservices.com
+0.0.0.0 amazon-adsystem.com
+0.0.0.0 adnxs.com
+0.0.0.0 criteo.com
+0.0.0.0 openx.net
+0.0.0.0 pubmatic.com
+0.0.0.0 rubiconproject.com
+0.0.0.0 taboola.com
+0.0.0.0 outbrain.com
+0.0.0.0 scorecardresearch.com
+0.0.0.0 adsafeprotected.com
+0.0.0.0 quantserve.com

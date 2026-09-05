@@ -1,0 +1,20 @@
+Rak adblocker report
+Page: adblocker/sample.html
+Blocklist domains: 15
+Blocked resources: 15
+
+[script] https://securepubads.g.doubleclick.net/tag/js/gpt.js -> doubleclick.net
+[script] https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js -> googlesyndication.com
+[script] https://aax-eu.amazon-adsystem.com/sdk/cf/amzn-ads.js -> amazon-adsystem.com
+[image] https://cdn.adnxs.com/slot/728x90-1.png -> adnxs.com
+[image] https://banner.openx.net/promo/mobile-320x50.png -> openx.net
+[image] https://pixel.criteo.com/sync?type=iframe -> criteo.com
+[link] https://www.taboola.com/partners -> taboola.com
+[link] https://www.outbrain.com/amplify-ads -> outbrain.com
+[src] https://securepubads.g.doubleclick.net/tag/js/gpt.js -> doubleclick.net
+[src] https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js -> googlesyndication.com
+[src] https://aax-eu.amazon-adsystem.com/sdk/cf/amzn-ads.js -> amazon-adsystem.com
+[src] https://cdn.adnxs.com/slot/728x90-1.png -> adnxs.com
+[src] https://banner.openx.net/promo/mobile-320x50.png -> openx.net
+[src] https://pixel.criteo.com/sync?type=iframe -> criteo.com
+[src] https://soa.pubmatic.com/soa/mega/adsrv -> pubmatic.com
