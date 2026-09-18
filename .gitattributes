@@ -1,0 +1,5 @@
+# Treat line endings consistently across platforms (LF)
+*.rak text eol=lf
+
+# Exclude generated output or build files from language stats
+build/* linguist-generated=true
