@@ -1,5 +1,5 @@
 # Map .rak files to JavaScript so the code is counted in language statistics
-*.rak linguist-language=JavaScript
+*.rak linguist-language=Rak
 *.rak linguist-detectable=true
 
 # Ignore HTML demo/sample files from language statistics
